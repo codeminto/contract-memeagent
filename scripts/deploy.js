@@ -4,13 +4,13 @@ async function main() {
 
   console.log("Deploying contracts with the account:", deployer.address);
 
-  const FactoryContract = await ethers.getContractFactory("FactoryContract");
-  const factoryContract =
-    await FactoryContract.deploy(/* pass constructor arguments here */);
+  const CampaignFactory = await ethers.getContractFactory("CampaignFactory");
+  const campaignFactory =
+    await CampaignFactory.deploy(/* pass constructor arguments here */);
 
-  await factoryContract.deployed();
+  await campaignFactory.deployed();
 
-  console.log("FactoryContract address:", factoryContract.address);
+  console.log("CampaignFactory address:", campaignFactory.address);
 
   // Optionally, deploy CompetitionContract here
 }
