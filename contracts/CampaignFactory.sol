@@ -5,7 +5,11 @@ import "./Campaign.sol";
 
 contract CampaignFactory {
     // Event to log the creation of a new Campaign contract
-    event CampaignCreated(uint256 indexed campaignId, address indexed owner, address campaignAddress);
+    event CampaignCreated(
+        uint256 indexed campaignId,
+        address indexed owner,
+        address campaignAddress
+    );
 
     // Event to log received payments
     event PaymentReceived(address indexed sender, uint256 amount);
@@ -43,7 +47,6 @@ contract CampaignFactory {
 
         // Increment the campaign count and set the new Campaign address in the mapping
         campaigns[campaignCount] = address(newCampaign);
-        
         // Emit an event with the new Campaign contract's ID and address
         emit CampaignCreated(campaignCount, msg.sender, address(newCampaign));
 

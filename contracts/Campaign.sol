@@ -49,8 +49,10 @@ contract Campaign is
     uint256 public totalPrizeAmount;
     uint256 public totalWinners;
     Submission[] public submissions;
+    Submission[] public winners;
     mapping(address => bool) public hasSubmitted;
     mapping(uint256 => mapping(address => bool)) public hasVoted;
+    mapping(address => bool) public hasClaimed;
 
     event SubmissionCreated(
         address indexed userId,
@@ -60,6 +62,7 @@ contract Campaign is
     );
     event Upvoted(address indexed voter, uint256 submissionId);
     event WinnersCalculated(Submission[] winningSubmissions);
+    event PrizeClaimed(address indexed winner, uint256 amount);
 
     CompetitionSettings public campaign;
 
@@ -105,7 +108,7 @@ contract Campaign is
             "Competition not active"
         );
         require(
-            submissions.length < maxParticipants || maxParticipants == 0,
+            submissions.length <= maxParticipants || maxParticipants == 0,
             "Maximum participants reached"
         );
         require(!hasSubmitted[msg.sender], "User has already submitted");
@@ -232,9 +235,28 @@ contract Campaign is
                 }
             }
             winningSubmissions[i] = submissions[winningSubmissionIndex];
+            winners[i] = submissions[winningSubmissionIndex];
             highestVotesIndices[i] = winningSubmissionIndex;
         }
 
         emit WinnersCalculated(winningSubmissions);
+    }
+
+    function claim() external {
+        require(block.timestamp > endDate, "End date not reached yet");
+        require(submissions.length > 0, "No submissions available");
+        require(!hasClaimed[msg.sender], "User has already claimed");
+
+        uint256 maxWinners = winners.length;
+
+        for (uint256 i = 0; i < maxWinners; i++) {
+            if (winners[i].userId == msg.sender) {
+                uint256 prizeAmount = totalPrizeAmount / totalWinners;
+                hasClaimed[msg.sender] = true;
+                payable(msg.sender).transfer(prizeAmount);
+                emit PrizeClaimed(msg.sender, prizeAmount);
+                break;
+            }
+        }
     }
 }
