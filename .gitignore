@@ -1,0 +1,46 @@
+node_modules
+.env
+.DS_Store
+# Hardhat files
+/cache
+/artifacts
+
+# TypeChain files
+/typechain
+/typechain-types
+
+# solidity-coverage files
+/coverage
+/coverage.json
+
+
+# Dependencies
+lib/
+artifacts/
+
+# Hardhat files
+gasReporterOutput.json
+
+# Foundry files
+out/
+forge-std/
+forge-std-out/
+forge-artifacts/
+cache_forge/
+broadcast/
+broadcast.log
+yarn.lock
+package-lock.json
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.secrets
+
+# Editors and IDEs
+.idea/
+*.swp
+*.swo
+.vscode/
+.deps/
