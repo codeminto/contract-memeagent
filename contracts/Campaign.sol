@@ -22,9 +22,9 @@ contract Campaign is
     }
 
     struct CompetitionSettings {
-        string name;
-        string symbol;
+        string imageUrl;
         string title;
+        string description;
         uint256 startDate;
         uint256 endDate;
         uint256 maxParticipants;
@@ -41,7 +41,9 @@ contract Campaign is
         uint256 submissionUpvotes;
     }
 
+    string public imageUrlContest;
     string public title;
+    string public description;
     uint256 public startDate;
     uint256 public endDate;
     uint256 public maxParticipants;
@@ -67,9 +69,9 @@ contract Campaign is
     CompetitionSettings public campaign;
 
     constructor(
-        string memory _name,
-        string memory _symbol,
+        string memory _imageUrl,
         string memory _title,
+        string memory _description,
         uint256 _startDate,
         uint256 _endDate,
         uint256 _maxParticipants,
@@ -77,12 +79,12 @@ contract Campaign is
         uint256 _totalPrizeAmount,
         uint256 _totalWinners,
         address initOwner
-    ) ERC721(_name, _symbol) Ownable(initOwner) {
+    ) ERC721(_title, _imageUrl) Ownable(initOwner) {
         // Initialize the struct
         campaign = CompetitionSettings({
-            name: _name,
-            symbol: _symbol,
+            imageUrl: _imageUrl,
             title: _title,
+            description: _description,
             startDate: _startDate,
             endDate: _endDate,
             maxParticipants: _maxParticipants,
@@ -90,7 +92,9 @@ contract Campaign is
             totalPrizeAmount: _totalPrizeAmount,
             totalWinners: _totalWinners
         });
+        imageUrlContest = _imageUrl;
         title = _title;
+        description = _description;
         startDate = _startDate;
         endDate = _endDate;
         maxParticipants = _maxParticipants;

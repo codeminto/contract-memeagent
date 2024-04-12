@@ -8,7 +8,16 @@ contract CampaignFactory {
     event CampaignCreated(
         uint256 indexed campaignId,
         address indexed owner,
-        address campaignAddress
+        address campaignAddress,
+        string imageUrl,
+        string title,
+        string description,
+        uint256 startDate,
+        uint256 endDate,
+        uint256 maxParticipants,
+        string judgingType,
+        uint256 totalPrizeAmount,
+        uint256 totalWinners
     );
 
     // Event to log received payments
@@ -22,9 +31,9 @@ contract CampaignFactory {
 
     // Function to create a new Campaign contract
     function createCampaign(
-        string memory name,
-        string memory symbol,
+        string memory imageUrl,
         string memory title,
+        string memory description,
         uint256 startDate,
         uint256 endDate,
         uint256 maxParticipants,
@@ -33,9 +42,9 @@ contract CampaignFactory {
         uint256 totalWinners
     ) external {
         Campaign newCampaign = new Campaign(
-            name,
-            symbol,
+            imageUrl,
             title,
+            description,
             startDate,
             endDate,
             maxParticipants,
@@ -48,7 +57,20 @@ contract CampaignFactory {
         // Increment the campaign count and set the new Campaign address in the mapping
         campaigns[campaignCount] = address(newCampaign);
         // Emit an event with the new Campaign contract's ID and address
-        emit CampaignCreated(campaignCount, msg.sender, address(newCampaign));
+        emit CampaignCreated(
+            campaignCount,
+            msg.sender,
+            address(newCampaign),
+            imageUrl,
+            title,
+            description,
+            startDate,
+            endDate,
+            maxParticipants,
+            judgingType,
+            totalPrizeAmount,
+            totalWinners
+        );
 
         // Increment the campaign counter
         campaignCount++;
