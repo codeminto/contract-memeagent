@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
+import {CampaignFactory} from "./CampaignFactory.sol";
 
 contract Campaign is
     ERC721,
@@ -55,6 +56,7 @@ contract Campaign is
     mapping(address => bool) public hasSubmitted;
     mapping(uint256 => mapping(address => bool)) public hasVoted;
     mapping(address => bool) public hasClaimed;
+    // IHeroPoolFactory public factory;
 
     event SubmissionCreated(
         address indexed userId,
@@ -67,6 +69,7 @@ contract Campaign is
     event PrizeClaimed(address indexed winner, uint256 amount);
 
     CompetitionSettings public campaign;
+    CampaignFactory public factory;
 
     constructor(
         string memory _imageUrl,
@@ -78,7 +81,8 @@ contract Campaign is
         string memory _judgingType,
         uint256 _totalPrizeAmount,
         uint256 _totalWinners,
-        address initOwner
+        address initOwner,
+        address _factoryContractAddress
     ) ERC721(_title, _imageUrl) Ownable(initOwner) {
         // Initialize the struct
         campaign = CompetitionSettings({
@@ -101,16 +105,17 @@ contract Campaign is
         judgingType = parseJudgingType(_judgingType);
         totalPrizeAmount = _totalPrizeAmount;
         totalWinners = _totalWinners;
+        factory = CampaignFactory(_factoryContractAddress);
     }
 
     function createSubmission(
         string memory _imageUrlOrHash,
         string memory _description
     ) external {
-        require(
-            block.timestamp >= startDate && block.timestamp <= endDate,
-            "Competition not active"
-        );
+        // require(
+        //     block.timestamp >= startDate && block.timestamp <= endDate,
+        //     "Competition not active"
+        // );
         require(
             submissions.length <= maxParticipants || maxParticipants == 0,
             "Maximum participants reached"
@@ -133,6 +138,13 @@ contract Campaign is
 
         emit SubmissionCreated(
             msg.sender,
+            _imageUrlOrHash,
+            _description,
+            submissions.length - 1
+        );
+        factory.logSubmissionCreated(
+            msg.sender,
+            address(this),
             _imageUrlOrHash,
             _description,
             submissions.length
@@ -204,6 +216,7 @@ contract Campaign is
         hasVoted[_submissionId][voter] = true;
 
         emit Upvoted(voter, _submissionId);
+        factory.logUpvoted(voter, address(this), _submissionId);
     }
 
     function calculateWinners() external {
@@ -244,6 +257,36 @@ contract Campaign is
         }
 
         emit WinnersCalculated(winningSubmissions);
+        factory.logWinnersCalculated(
+            convertToLogSubmission(winningSubmissions),
+            address(this)
+        );
+    }
+
+    function convertToLogSubmission(
+        Submission[] memory campaignSubmissions
+    ) internal pure returns (CampaignFactory.Submission[] memory) {
+        CampaignFactory.Submission[]
+            memory logSubmissions = new CampaignFactory.Submission[](
+                campaignSubmissions.length
+            );
+
+        for (uint256 i = 0; i < campaignSubmissions.length; i++) {
+            Submission memory campaignSubmission = campaignSubmissions[i];
+            CampaignFactory.Submission memory logSubmission;
+
+            // Convert each field
+            logSubmission.imageUrlOrHash = campaignSubmission.imageUrlOrHash;
+            logSubmission.userId = campaignSubmission.userId;
+            logSubmission.description = campaignSubmission.description;
+            logSubmission.submissionId = campaignSubmission.submissionId;
+            logSubmission.submissionUpvotes = campaignSubmission
+                .submissionUpvotes;
+
+            logSubmissions[i] = logSubmission;
+        }
+
+        return logSubmissions;
     }
 
     function claim() external {

@@ -2,8 +2,9 @@
 pragma solidity ^0.8.20;
 
 import "./Campaign.sol";
+import {LogContract} from "./LogContract.sol";
 
-contract CampaignFactory {
+contract CampaignFactory is LogContract {
     // Event to log the creation of a new Campaign contract
     event CampaignCreated(
         uint256 indexed campaignId,
@@ -51,7 +52,8 @@ contract CampaignFactory {
             judgingType,
             totalPrizeAmount,
             totalWinners,
-            msg.sender // Set the creator as the initial owner of the Campaign contract
+            msg.sender, // Set the creator as the initial owner of the Campaign contract
+            address(this)
         );
 
         // Increment the campaign count and set the new Campaign address in the mapping

@@ -1,18 +1,10 @@
 // deploy.js
+const { ethers, upgrades } = require("hardhat");
+
 async function main() {
-  const [deployer] = await ethers.getSigners();
-
-  console.log("Deploying contracts with the account:", deployer.address);
-
   const CampaignFactory = await ethers.getContractFactory("CampaignFactory");
-  const campaignFactory =
-    await CampaignFactory.deploy(/* pass constructor arguments here */);
-
-  await campaignFactory.deployed();
-
-  console.log("CampaignFactory address:", campaignFactory.address);
-
-  // Optionally, deploy CompetitionContract here
+  const campaignFactory = await CampaignFactory.deploy();
+  console.log("CampaignFactory address:", campaignFactory.target);
 }
 
 main()
