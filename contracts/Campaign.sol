@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
+import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
 import {CampaignFactory} from "./CampaignFactory.sol";
 
 contract Campaign is
@@ -14,7 +15,8 @@ contract Campaign is
     ERC721URIStorage,
     ERC721Pausable,
     Ownable,
-    ERC721Burnable
+    ERC721Burnable,
+    VRFConsumerBase
 {
     uint256 private _nextTokenId;
     enum JudgingType {
@@ -147,7 +149,7 @@ contract Campaign is
             address(this),
             _imageUrlOrHash,
             _description,
-            submissions.length
+            submissions.length - 1
         );
     }
 
@@ -305,5 +307,49 @@ contract Campaign is
                 break;
             }
         }
+    }
+
+    // Function to request random number from Chainlink VRF
+    function requestRandomNumber(
+        uint256 userProvidedSeed
+    ) internal returns (bytes32 requestId) {
+        require(
+            LINK.balanceOf(address(this)) >= fee,
+            "Not enough LINK to pay fee"
+        );
+        return requestRandomness(keyHash, fee, userProvidedSeed);
+    }
+
+    // Callback function called by Chainlink VRF with the random number
+    function fulfillRandomness(
+        bytes32 requestId,
+        uint256 randomness
+    ) internal override {
+        randomResult = randomness;
+        // Call your function to select winners using the random number here...
+    }
+
+    // Function to announce winners using the random number
+    function announceWinners() external onlyOwner {
+        // Request a random number from Chainlink VRF
+        uint256 userProvidedSeed = uint256(
+            keccak256(abi.encodePacked(blockhash(block.number)))
+        );
+        requestRandomNumber(userProvidedSeed);
+    }
+
+    // Function to select winners using the random number
+    function selectWinners() internal {
+        // Use the random number to select winners from the submissions
+        // For example, select the winners based on the random number modulus total submissions
+        uint256 numWinners = totalWinners > submissions.length
+            ? submissions.length
+            : totalWinners;
+        address[] memory winnersArray = new address[](numWinners);
+        for (uint256 i = 0; i < numWinners; i++) {
+            uint256 winnerIndex = (randomResult + i) % submissions.length;
+            winnersArray[i] = submissions[winnerIndex].userId;
+        }
+        emit WinnersAnnounced(winnersArray);
     }
 }

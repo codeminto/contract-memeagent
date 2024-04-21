@@ -81,6 +81,11 @@ module.exports = {
       url: "https://rpc.ankr.com/blast_testnet_sepolia/52b75d96b0312930727e185eff5208721ce56a5cc8c52f422a3f4385cc3949c8",
       accounts,
     },
+    baseSepolia: {
+      chainId: 84532,
+      url: "https://base-sepolia.g.alchemy.com/v2/Up64rnR890HjYazhfPlz-71AUbpbZloJ",
+      accounts,
+    },
   },
   contractSizer: {
     alphaSort: true,
