@@ -1,22 +1,27 @@
 // SPDX-License-Identifier: MIT
-// Compatible with OpenZeppelin Contracts ^5.0.0
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Pausable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
-import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
-import {CampaignFactory} from "./CampaignFactory.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721BurnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "./interface/ICampaignFactory.sol";  // Import the interface
+
+import "@chainlink/contracts/src/v0.8/vrf/interfaces/VRFCoordinatorV2Interface.sol";
+import "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBaseV2.sol";
 
 contract Campaign is
-    ERC721,
-    ERC721URIStorage,
-    ERC721Pausable,
-    Ownable,
-    ERC721Burnable,
-    VRFConsumerBase
+    Initializable,
+    ERC721Upgradeable,
+    ERC721URIStorageUpgradeable,
+    ERC721PausableUpgradeable,
+    OwnableUpgradeable,
+    ERC721BurnableUpgradeable,
+    VRFConsumerBaseV2
+    UUPSUpgradeable
 {
     uint256 private _nextTokenId;
     enum JudgingType {
@@ -71,9 +76,9 @@ contract Campaign is
     event PrizeClaimed(address indexed winner, uint256 amount);
 
     CompetitionSettings public campaign;
-    CampaignFactory public factory;
+    ICampaignFactory public factory;  // Use the interface type
 
-    constructor(
+    function initialize(
         string memory _imageUrl,
         string memory _title,
         string memory _description,
@@ -85,7 +90,14 @@ contract Campaign is
         uint256 _totalWinners,
         address initOwner,
         address _factoryContractAddress
-    ) ERC721(_title, _imageUrl) Ownable(initOwner) {
+    ) public initializer {
+        __ERC721_init(_title, _imageUrl);
+        __ERC721URIStorage_init();
+        __ERC721Pausable_init();
+        __Ownable_init();
+        __ERC721Burnable_init();
+        __UUPSUpgradeable_init();
+
         // Initialize the struct
         campaign = CompetitionSettings({
             imageUrl: _imageUrl,
@@ -107,9 +119,9 @@ contract Campaign is
         judgingType = parseJudgingType(_judgingType);
         totalPrizeAmount = _totalPrizeAmount;
         totalWinners = _totalWinners;
-        factory = CampaignFactory(_factoryContractAddress);
+        factory = ICampaignFactory(_factoryContractAddress);
+        transferOwnership(initOwner);
     }
-
     function createSubmission(
         string memory _imageUrlOrHash,
         string memory _description
@@ -173,19 +185,19 @@ contract Campaign is
         address to,
         uint256 tokenId,
         address auth
-    ) internal override(ERC721, ERC721Pausable) returns (address) {
+    ) internal override(ERC721Upgradeable, ERC721PausableUpgradeable) returns (address) {
         return super._update(to, tokenId, auth);
     }
 
     function tokenURI(
         uint256 tokenId
-    ) public view override(ERC721, ERC721URIStorage) returns (string memory) {
+    ) public view override(ERC721Upgradeable, ERC721URIStorageUpgradeable) returns (string memory) {
         return super.tokenURI(tokenId);
     }
 
     function supportsInterface(
         bytes4 interfaceId
-    ) public view override(ERC721, ERC721URIStorage) returns (bool) {
+    ) public view override(ERC721Upgradeable, ERC721URIStorageUpgradeable) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
@@ -259,37 +271,13 @@ contract Campaign is
         }
 
         emit WinnersCalculated(winningSubmissions);
-        factory.logWinnersCalculated(
-            convertToLogSubmission(winningSubmissions),
-            address(this)
-        );
+        // factory.logWinnersCalculated(
+        //     convertToLogSubmission(winningSubmissions),
+        //     address(this)
+        // );
     }
 
-    function convertToLogSubmission(
-        Submission[] memory campaignSubmissions
-    ) internal pure returns (CampaignFactory.Submission[] memory) {
-        CampaignFactory.Submission[]
-            memory logSubmissions = new CampaignFactory.Submission[](
-                campaignSubmissions.length
-            );
-
-        for (uint256 i = 0; i < campaignSubmissions.length; i++) {
-            Submission memory campaignSubmission = campaignSubmissions[i];
-            CampaignFactory.Submission memory logSubmission;
-
-            // Convert each field
-            logSubmission.imageUrlOrHash = campaignSubmission.imageUrlOrHash;
-            logSubmission.userId = campaignSubmission.userId;
-            logSubmission.description = campaignSubmission.description;
-            logSubmission.submissionId = campaignSubmission.submissionId;
-            logSubmission.submissionUpvotes = campaignSubmission
-                .submissionUpvotes;
-
-            logSubmissions[i] = logSubmission;
-        }
-
-        return logSubmissions;
-    }
+    
 
     function claim() external {
         require(block.timestamp > endDate, "End date not reached yet");
@@ -309,25 +297,25 @@ contract Campaign is
         }
     }
 
-    // Function to request random number from Chainlink VRF
-    function requestRandomNumber(
-        uint256 userProvidedSeed
-    ) internal returns (bytes32 requestId) {
-        require(
-            LINK.balanceOf(address(this)) >= fee,
-            "Not enough LINK to pay fee"
-        );
-        return requestRandomness(keyHash, fee, userProvidedSeed);
-    }
+    // // Function to request random number from Chainlink VRF
+    // function requestRandomNumber(
+    //     uint256 userProvidedSeed
+    // ) internal returns (bytes32 requestId) {
+    //     require(
+    //         LINK.balanceOf(address(this)) >= fee,
+    //         "Not enough LINK to pay fee"
+    //     );
+    //     return requestRandomness(keyHash, fee, userProvidedSeed);
+    // }
 
-    // Callback function called by Chainlink VRF with the random number
-    function fulfillRandomness(
-        bytes32 requestId,
-        uint256 randomness
-    ) internal override {
-        randomResult = randomness;
-        // Call your function to select winners using the random number here...
-    }
+    // // Callback function called by Chainlink VRF with the random number
+    // function fulfillRandomness(
+    //     bytes32 requestId,
+    //     uint256 randomness
+    // ) internal override {
+    //     randomResult = randomness;
+    //     // Call your function to select winners using the random number here...
+    // }
 
     // Function to announce winners using the random number
     function announceWinners() external onlyOwner {
@@ -335,7 +323,7 @@ contract Campaign is
         uint256 userProvidedSeed = uint256(
             keccak256(abi.encodePacked(blockhash(block.number)))
         );
-        requestRandomNumber(userProvidedSeed);
+       // requestRandomNumber(userProvidedSeed);
     }
 
     // Function to select winners using the random number

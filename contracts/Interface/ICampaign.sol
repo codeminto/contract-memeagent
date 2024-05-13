@@ -1,7 +1,20 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.23;
 
-interface CompetitionContractInterface {
+interface ICampaign {
+     function initialize(
+        string calldata imageUrl,
+        string calldata title,
+        string calldata description,
+        uint256 startDate,
+        uint256 endDate,
+        uint256 maxParticipants,
+        string calldata judgingType,
+        uint256 totalPrizeAmount,
+        uint256 totalWinners,
+        address initOwner,
+        address factoryContractAddress
+    ) external;
     struct Submission {
         string imageUrlOrHash;
         address userId;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
-
-import "./Campaign.sol";
+pragma solidity ^0.8.23;
+import "@openzeppelin/contracts-upgradeable/proxy/ClonesUpgradeable.sol";
+import {ICampaign} from "./Interface/ICampaign.sol";
 import {LogContract} from "./LogContract.sol";
 
 contract CampaignFactory is LogContract {
@@ -30,8 +30,15 @@ contract CampaignFactory is LogContract {
     // Mapping from campaign ID to Campaign contract addresses
     mapping(uint256 => address) public campaigns;
 
+    address public immutable campaignImplementation;
+
+
+    constructor(address _campaignImplementation) {
+        campaignImplementation = _campaignImplementation;
+    }
+
     // Function to create a new Campaign contract
-    function createCampaign(
+     function createCampaign(
         string memory imageUrl,
         string memory title,
         string memory description,
@@ -42,7 +49,8 @@ contract CampaignFactory is LogContract {
         uint256 totalPrizeAmount,
         uint256 totalWinners
     ) external {
-        Campaign newCampaign = new Campaign(
+        address clone = ClonesUpgradeable.clone(campaignImplementation);
+        ICampaign(clone).initialize(
             imageUrl,
             title,
             description,
@@ -56,13 +64,11 @@ contract CampaignFactory is LogContract {
             address(this)
         );
 
-        // Increment the campaign count and set the new Campaign address in the mapping
-        campaigns[campaignCount] = address(newCampaign);
-        // Emit an event with the new Campaign contract's ID and address
+        campaigns[campaignCount] = clone;
         emit CampaignCreated(
             campaignCount,
             msg.sender,
-            address(newCampaign),
+            clone,
             imageUrl,
             title,
             description,
@@ -74,7 +80,10 @@ contract CampaignFactory is LogContract {
             totalWinners
         );
 
-        // Increment the campaign counter
         campaignCount++;
+    }
+
+    receive() external payable {
+        emit PaymentReceived(msg.sender, msg.value);
     }
 }
